@@ -106,7 +106,7 @@ def get_env(task, seed):
     env = gym.make(task)
     set_global_seeds(seed)
     env.seed(seed)
-    expt_dir = '/tmp/pacman_dqn/'
+    expt_dir = '/tmp/pacman_dqn/dqn_video'
     env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True)
     env = wrap_deepmind(env)
     return env

@@ -306,7 +306,8 @@ def learn(env,
                                                                      done_mask_ph:done_mask_batch})
 
                 train_loss = (train_food_loss + train_avoid_loss + train_fruit_loss + train_eat_loss)/4.
-                print("Food loss: {}\n \
+                print("\n \
+                       Food loss: {}\n \
                        Avoid loss: {}\n \
                        Fruit loss: {}\n \
                        Eat loss: {}".format(train_food_loss,
