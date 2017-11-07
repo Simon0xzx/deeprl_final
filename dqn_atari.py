@@ -112,23 +112,14 @@ def get_env(task, seed):
     return env
 
 def main():
-    times, mean_rewards, best_rewards = [], [], []
     seed = np.random.randint(1000) # Use a seed of zero (you may want to randomize the seed!)
     env = get_env('MsPacman-v0', seed)
     session = get_session()
     time, mean_ep_reward, best_ep_reward = atari_learn(env, session,
                                     num_timesteps=20000000)
-    times.append(time)
-    mean_rewards.append(mean_ep_reward)
-    best_rewards.append(best_ep_reward)
-
-    label = []
-    for i in range(len(batches)):
-        plt.plot(times[i], mean_rewards[i])
-        plt.plot(times[i], best_rewards[i])
-        label.extend(['mean_rewards_batch={}'.format(learn_freqs[i]), 'best_rewards_batch={}'.format(learn_freqs[i])])
-
-    plt.legend(label, loc='best')
+    plt.plot(times, mean_rewards)
+    plt.plot(times, best_rewards)
+    plt.legend(["mean_rewards", "best_rewards"], loc='best')
     plt.show()
 
 if __name__ == "__main__":

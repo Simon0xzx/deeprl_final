@@ -27,56 +27,7 @@ def learn(env,
           frame_history_len=4,
           target_update_freq=10000,
           grad_norm_clipping=10):
-    """Run Deep Q-learning algorithm.
 
-    You can specify your own convnet using q_func.
-
-    All schedules are w.r.t. total number of steps taken in the environment.
-
-    Parameters
-    ----------
-    env: gym.Env
-        gym environment to train on.
-    q_func: function
-        Model to use for computing the q function. It should accept the
-        following named arguments:
-            img_in: tf.Tensor
-                tensorflow tensor representing the input image
-            num_actions: int
-                number of actions
-            scope: str
-                scope in which all the model related variables
-                should be created
-            reuse: bool
-                whether previously created variables should be reused.
-    optimizer_spec: OptimizerSpec
-        Specifying the constructor and kwargs, as well as learning rate schedule
-        for the optimizer
-    session: tf.Session
-        tensorflow session to use.
-    exploration: rl_algs.deepq.utils.schedules.Schedule
-        schedule for probability of chosing random action.
-    stopping_criterion: (env, t) -> bool
-        should return true when it's ok for the RL algorithm to stop.
-        takes in env and the number of steps executed so far.
-    replay_buffer_size: int
-        How many memories to store in the replay buffer.
-    batch_size: int
-        How many transitions to sample each time experience is replayed.
-    gamma: float
-        Discount Factor
-    learning_starts: int
-        After how many environment steps to start replaying experiences
-    learning_freq: int
-        How many steps of environment to take between every experience replay
-    frame_history_len: int
-        How many past frames to include as input to the model.
-    target_update_freq: int
-        How many experience replay rounds (not steps!) to perform between
-        each update to the target Q network
-    grad_norm_clipping: float or None
-        If not None gradients' norms are clipped to this value.
-    """
     assert type(env.observation_space) == gym.spaces.Box
     assert type(env.action_space)      == gym.spaces.Discrete
 
@@ -314,9 +265,9 @@ def learn(env,
             sys.stdout.flush()
 
     file_path = "dqn_result"
-    time_name = path.join(file_path, "dqn_{}_t.dat".format(learning_freq))
-    mean_name = path.join(file_path, "dqn_{}_mean.dat".format(learning_freq))
-    best_name = path.join(file_path, "dqn_{}_best.dat".format(learning_freq))
+    time_name = path.join(file_path, "dqn_t.dat")
+    mean_name = path.join(file_path, "dqn_mean.dat")
+    best_name = path.join(file_path, "dqn_best.dat")
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     joblib.dump(value=times, filename = time_name, compress=3)

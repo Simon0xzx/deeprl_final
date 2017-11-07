@@ -129,20 +129,40 @@ class ClippedRewardsWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         return obs, np.sign(reward), done, info
 
-def wrap_deepmind_ram(env):
-    env = EpisodicLifeEnv(env)
-    env = NoopResetEnv(env, noop_max=30)
-    env = MaxAndSkipEnv(env, skip=4)
-    if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = FireResetEnv(env)
-    env = ClippedRewardsWrapper(env)
-    return env
+class DecompositeRewardsWrapper(gym.Wrapper):
+    def __init__(self, env=None):
+        super(DecompositeRewardsWrapper, self).__init__(env)
+        self.lifes = 3
 
-def wrap_deepmind(env):
+    def _step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        food_reward = reward%100
+        avoid_reward = 0.0
+        fruit_reward = 0.0
+        eat_reward = 0.0
+
+        reward -= reward%100
+        if not reward%200:
+            eat_reward = reward
+        else:
+            fruit_reward += reward
+
+        if info['ale.lives'] < self.lifes:
+            avoid_reward -= 1000
+            self.lifes = info['ale.lives']
+
+        compound_reward = np.array([food_reward,
+                                   avoid_reward,
+                                   fruit_reward,
+                                   eat_reward])
+        return obs, compound_reward, done
+
+def wrap_deepmind(env, rha=False):
     env = EpisodicLifeEnv(env)
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
-    if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = FireResetEnv(env)
     env = ProcessFrame86(env)
+    if rha:
+        env = DecompositeRewardsWrapper(env)
+
     return env
