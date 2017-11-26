@@ -24,12 +24,13 @@ def train(rank, reward_type, args, shared_model, optimizer, env_conf):
 
     torch.manual_seed(args.seed + rank)
     env = atari_env(args.env, env_conf)
+    env.seed(args.seed + rank)
+    
     reward_sum = 0
     start_time = time.time()
     num_tests = 0
     reward_total_sum = 0
 
-    env.seed(args.seed + rank)
     player = Agent(None, env, args, None, reward_type)
     player.model = A3Clstm(
         player.env.observation_space.shape[0], player.env.action_space)
