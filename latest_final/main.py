@@ -4,7 +4,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 import numpy as np
 import argparse
 import torch
-from torch.multiprocessing import Process
+# from torch.multiprocessing import Process
 from environment import atari_env
 from utils import read_config
 from model import A3Clstm
@@ -13,6 +13,8 @@ from test import test
 from gym.configuration import undo_logger_setup
 from optimizer import SharedAdam
 import time
+import torch.multiprocessing as _mp
+mp = _mp.get_context("spawn")
 
 undo_logger_setup()
 
@@ -141,7 +143,7 @@ if __name__ == '__main__':
         # 'EAT'->2,
         # 'GHOST'->3
         for reward_type in range(4):
-            p = Process(
+            p = mp.Process(
                 target=train, args=(rank, reward_type, args, shared_model, optimizer, env_conf))
             p.start()
             processes.append(p)
