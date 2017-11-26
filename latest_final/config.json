@@ -1,0 +1,12 @@
+{
+  "Default": {
+    "crop1": 34,
+    "crop2": 34,
+    "dimension2": 80
+  },
+  "MsPacman": {
+    "crop1": 2,
+    "crop2": 10,
+    "dimension2": 84
+  }
+}
