@@ -2,6 +2,7 @@ from __future__ import division
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
+# import ipdb
 
 class Agent(object):
     def __init__(self, model, env, args, state, reward_type):
@@ -29,6 +30,8 @@ class Agent(object):
         else:
             self.cx = Variable(self.cx.data)
             self.hx = Variable(self.hx.data)
+        # ipdb.set_trace()
+
         value, logit, (self.hx, self.cx) = self.model((Variable(self.state.unsqueeze(0)), (self.hx, self.cx)))
         prob = F.softmax(logit)
         log_prob = F.log_softmax(logit)
@@ -37,18 +40,19 @@ class Agent(object):
         action = prob.multinomial().data
         log_prob = log_prob.gather(1, Variable(action))
         state, raw_reward, self.done, self.info = self.env.step(action.numpy())
+        # self.env.render()
 
         self.state = torch.from_numpy(state).float()
         self.eps_len += 1
         self.done = self.done or self.eps_len >= self.args.max_episode_length
-        self.reward = max(min(raw_reward[self.reward_type], 1), -1)
+        self.reward = raw_reward[self.reward_type]
         self.values.append(value)
         self.log_probs.append(log_prob)
 
         self.rewards.append(self.reward)
         return self
 
-    def action_test(self, t):
+    def action_test(self):
         if self.done:
             self.cx = Variable(torch.zeros(1, 512), volatile=True)
             self.hx = Variable(torch.zeros(1, 512), volatile=True)

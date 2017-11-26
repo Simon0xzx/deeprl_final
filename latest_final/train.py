@@ -25,7 +25,7 @@ def train(rank, reward_type, args, shared_model, optimizer, env_conf):
     torch.manual_seed(args.seed + rank)
     env = atari_env(args.env, env_conf)
     env.seed(args.seed + rank)
-    
+
     reward_sum = 0
     start_time = time.time()
     num_tests = 0
@@ -34,15 +34,17 @@ def train(rank, reward_type, args, shared_model, optimizer, env_conf):
     player = Agent(None, env, args, None, reward_type)
     player.model = A3Clstm(
         player.env.observation_space.shape[0], player.env.action_space)
+
     player.state = player.env.reset()
     player.state = torch.from_numpy(player.state).float()
     player.model.train()
 
     for i in itertools.count():
-        if i%10==0: print("reward type {0}, iter {1}\n".format(reward_type, i))
+        if i%10==0: print("reward type {0}, iter {1}".format(reward_type, i))
         player.model.load_state_dict(shared_model.state_dict())
         for step in range(args.num_steps):
             player.action_train()
+            reward_sum += player.reward
             if args.count_lives:
                 player.check_state()
             if player.done:
