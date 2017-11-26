@@ -2,7 +2,6 @@ from __future__ import division
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-from dqn_utils import *
 
 class Agent(object):
     def __init__(self, model, env, args, state, reward_type):

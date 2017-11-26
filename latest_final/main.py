@@ -1,6 +1,6 @@
-# from __future__ import print_function, division
+from __future__ import print_function, division
 import os
-# os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 import numpy as np
 import argparse
 import torch
@@ -13,6 +13,7 @@ from test import test
 from gym.configuration import undo_logger_setup
 from optimizer import SharedAdam
 import time
+
 undo_logger_setup()
 
 # USE_CUDA = torch.cuda.is_available()
@@ -47,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     '--workers',
     type=int,
-    default=4,
+    default=1,
     metavar='W',
     help='how many training processes to use (default: 32)')
 parser.add_argument(
@@ -64,7 +65,7 @@ parser.add_argument(
     help='maximum length of an episode (default: 10000)')
 parser.add_argument(
     '--env',
-    default='Pong-v0',
+    default='MsPacman-v0',
     metavar='ENV',
     help='environment to train on (default: Pong-v0)')
 parser.add_argument(
@@ -145,7 +146,6 @@ if __name__ == '__main__':
             p.start()
             processes.append(p)
             time.sleep(0.01)
-
     for p in processes:
         time.sleep(0.01)
         p.join()

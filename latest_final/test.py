@@ -3,7 +3,7 @@ import torch
 from environment import atari_env
 from utils import setup_logger
 from model import A3Clstm
-from player_util import Agent
+from agent import Agent
 from torch.autograd import Variable
 import time
 import logging
@@ -26,6 +26,7 @@ def test(args, shared_model, env_conf):
     start_time = time.time()
     num_tests = 0
     reward_total_sum = 0
+    
     player = Agent(None, env, args, None)
     player.model = A3Clstm(
         player.env.observation_space.shape[0], player.env.action_space)

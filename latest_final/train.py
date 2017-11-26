@@ -4,14 +4,31 @@ import torch.optim as optim
 from environment import atari_env
 from utils import ensure_shared_grads
 from model import A3Clstm
-from player_util import Agent
+from agent import Agent
 from torch.autograd import Variable
+import itertools
+import logging
+from utils import setup_logger
+import time
 
 
 def train(rank, reward_type, args, shared_model, optimizer, env_conf):
+    log = {}
+    setup_logger('{}_log'.format(args.env),
+                 r'{0}{1}_log'.format(args.log_dir, args.env))
+    log['{}_log'.format(args.env)] = logging.getLogger(
+        '{}_log'.format(args.env))
+    d_args = vars(args)
+    for k in d_args.keys():
+        log['{}_log'.format(args.env)].info('{0}: {1}'.format(k, d_args[k]))
 
     torch.manual_seed(args.seed + rank)
     env = atari_env(args.env, env_conf)
+    reward_sum = 0
+    start_time = time.time()
+    num_tests = 0
+    reward_total_sum = 0
+
     env.seed(args.seed + rank)
     player = Agent(None, env, args, None, reward_type)
     player.model = A3Clstm(
@@ -20,7 +37,8 @@ def train(rank, reward_type, args, shared_model, optimizer, env_conf):
     player.state = torch.from_numpy(player.state).float()
     player.model.train()
 
-    while True:
+    for i in itertools.count():
+        if i%10==0: print("reward type {0}, iter {1}\n".format(reward_type, i))
         player.model.load_state_dict(shared_model.state_dict())
         for step in range(args.num_steps):
             player.action_train()
@@ -30,6 +48,17 @@ def train(rank, reward_type, args, shared_model, optimizer, env_conf):
                 break
 
         if player.done:
+            num_tests += 1
+            player.current_life = 0
+            reward_total_sum += reward_sum
+            reward_mean = reward_total_sum / num_tests
+            log['{}_log'.format(args.env)].info(
+                "Time {0}, episode reward {1}, episode length {2}, reward mean {3:.4f}".
+                format(
+                    time.strftime("%Hh %Mm %Ss",
+                                  time.gmtime(time.time() - start_time)),
+                    reward_sum, player.eps_len, reward_mean))
+
             player.eps_len = 0
             player.current_life = 0
             state = player.env.reset()
