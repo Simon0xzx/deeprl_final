@@ -88,7 +88,7 @@ def learn(env,
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
 
-    target_q_all = tf.concat([target_food, target_avoid, target_fruit, target_eat], 0)
+    target_q_all = tf.concat([target_food, target_avoid, target_fruit, target_eat], 1)
     target_q_total = aggregator(target_q_all, num_actions, scope="target_q_agg", reuse=False)
     action_selected = tf.argmax(target_q_total, 0)
     agg_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_agg')
@@ -109,9 +109,10 @@ def learn(env,
     eat_error = tf.reduce_mean(tf.losses.huber_loss(y_eat_t_val, q_act_eat_t_val))
 
     q_weight_val = tf.reduce_sum(target_q_total * tf.one_hot(act_t_ph, num_actions), axis=1)
-    weight_error = rew_food_t_ph + rew_avoid_t_ph + rew_fruit_t_ph + rew_eat_t_ph
-    weight_error += gamma * tf.reduce_max(target_q_total, 0) - q_weight_val
+    q_weight_y = rew_food_t_ph + rew_avoid_t_ph + rew_fruit_t_ph + rew_eat_t_ph
+    q_weight_y += gamma * (1 - done_mask_ph) * tf.reduce_max(target_q_total, axis=1) - q_weight_val
 
+    weight_error = tf.reduce_mean(tf.losses.huber_loss(q_weight_y, q_weight_val))
     # construct optimization op (with gradient clipping)
     learning_rate = tf.placeholder(tf.float32, (), name="learning_rate")
     optimizer = optimizer_spec.constructor(learning_rate=learning_rate, **optimizer_spec.kwargs)
@@ -172,7 +173,6 @@ def learn(env,
         if (t > learning_starts and
                 t % learning_freq == 0 and
                 replay_buffer.can_sample(batch_size)):
-
             obs_t_batch, act_t_batch, rew_t_batch, obs_tp1_batch, done_mask_batch =  replay_buffer.sample(batch_size)
             rew_food_t_batch = rew_t_batch[:, 0]
             rew_fruit_t_batch = rew_t_batch[:, 1]
@@ -245,10 +245,10 @@ def learn(env,
                                                                      done_mask_ph:done_mask_batch})
                 train_eat_loss = session.run(eat_error, feed_dict={obs_t_ph:obs_t_batch,
                                                                      act_t_ph:act_t_batch,
-                                                                     rew_t_ph:rew_eat_t_batch,
+                                                                     rew_eat_t_ph:rew_eat_t_batch,
                                                                      obs_tp1_ph:obs_tp1_batch,
                                                                      done_mask_ph:done_mask_batch})
-
+                train_loss = 0.25 * (train_food_loss + train_avoid_loss + train_fruit_loss + train_eat_loss)
                 print("\n \
                        Food loss: {}\n \
                        Avoid loss: {}\n \
