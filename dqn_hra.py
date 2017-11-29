@@ -108,8 +108,9 @@ def learn(env,
     fruit_error = tf.reduce_mean(tf.losses.huber_loss(y_fruit_t_val, q_act_fruit_t_val))
     eat_error = tf.reduce_mean(tf.losses.huber_loss(y_eat_t_val, q_act_eat_t_val))
 
+    q_weight_val = tf.reduce_sum(target_q_total * tf.one_hot(act_t_ph, num_actions), axis=1)
     weight_error = rew_food_t_ph + rew_avoid_t_ph + rew_fruit_t_ph + rew_eat_t_ph
-    weight_error += gamma * tf.maximum(target_q_total, 0) - target_q_total
+    weight_error += gamma * tf.reduce_max(target_q_total, 0) - q_weight_val
 
     # construct optimization op (with gradient clipping)
     learning_rate = tf.placeholder(tf.float32, (), name="learning_rate")
@@ -248,7 +249,6 @@ def learn(env,
                                                                      obs_tp1_ph:obs_tp1_batch,
                                                                      done_mask_ph:done_mask_batch})
 
-                train_loss = (train_food_loss + train_avoid_loss + train_fruit_loss + train_eat_loss)/4.
                 print("\n \
                        Food loss: {}\n \
                        Avoid loss: {}\n \
