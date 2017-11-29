@@ -117,8 +117,8 @@ def main():
     session = get_session()
     time, mean_ep_reward, best_ep_reward = atari_learn(env, session,
                                     num_timesteps=20000000)
-    plt.plot(times, mean_rewards)
-    plt.plot(times, best_rewards)
+    plt.plot(time, mean_ep_reward)
+    plt.plot(time, best_ep_reward)
     plt.legend(["mean_rewards", "best_rewards"], loc='best')
     plt.show()
 

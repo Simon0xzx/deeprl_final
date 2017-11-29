@@ -286,8 +286,6 @@ def learn(env,
             logz.log_tabular("Exploration", exploration.value(t))
             logz.log_tabular("Learning Rate", optimizer_spec.lr_schedule.value(t))
             logz.dump_tabular()
-            # logz.pickle_tf_vars()
-
             sys.stdout.flush()
 
 

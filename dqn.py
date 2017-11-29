@@ -2,7 +2,7 @@ import sys
 import os.path as path
 import os, joblib, pickle
 import gym.spaces
-import itertools, time
+import itertools, time, logz, inspect
 import numpy as np
 import random
 import tensorflow                as tf
@@ -30,6 +30,21 @@ def learn(env,
 
     assert type(env.observation_space) == gym.spaces.Box
     assert type(env.action_space)      == gym.spaces.Discrete
+
+    # Log the progress during the trainining
+    start = time.time()
+    logdir = 'pacman_dqn_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+    logdir = os.path.join('dqn_result', logdir)
+    logz.configure_output_dir(logdir)
+    args = inspect.getargspec(q_func)[0]
+    locals_ = locals()
+    params = {k: locals_[k] if k in locals_ else None for k in args}
+    logz.save_params(params)
+    time_name = path.join(logdir, "dqn_rha_t.dat")
+    mean_name = path.join(logdir, "dqn_rha_mean.dat")
+    best_name = path.join(logdir, "dqn_rha_best.dat")
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
 
     times, mean_ep_rewards, best_ep_rewards = [], [], []
 
@@ -251,27 +266,19 @@ def learn(env,
             mean_ep_rewards.append(mean_episode_reward)
             best_ep_rewards.append(best_mean_episode_reward)
 
-            log_dict = {"time":times, "mean": mean_ep_rewards, "best": best_ep_rewards}
-            f = open("output_batch{}.pkl".format(batch_size), "wb")
-            pickle.dump(log_dict, f)
-            f.close()
+            joblib.dump(value=times, filename = time_name, compress=3)
+            joblib.dump(value=mean_ep_rewards, filename = mean_name, compress=3)
+            joblib.dump(value=best_ep_rewards, filename = best_name, compress=3)
 
-            print("Timestep %d" % (t,))
-            print("mean reward (100 episodes) %f" % mean_episode_reward)
-            print("best mean reward %f" % best_mean_episode_reward)
-            print("episodes %d" % len(episode_rewards))
-            print("exploration %f" % exploration.value(t))
-            print("learning_rate %f" % optimizer_spec.lr_schedule.value(t))
+            logz.log_tabular("Training Time", time.time() - start)
+            logz.log_tabular("Loss", train_loss)
+            logz.log_tabular("Iteration", t)
+            logz.log_tabular("Mean Reward (/100ep)", mean_episode_reward)
+            logz.log_tabular("Best Mean Reward", best_mean_episode_reward)
+            logz.log_tabular("Episodes", len(episode_rewards))
+            logz.log_tabular("Exploration", exploration.value(t))
+            logz.log_tabular("Learning Rate", optimizer_spec.lr_schedule.value(t))
+            logz.dump_tabular()
             sys.stdout.flush()
-
-    file_path = "dqn_result"
-    time_name = path.join(file_path, "dqn_t.dat")
-    mean_name = path.join(file_path, "dqn_mean.dat")
-    best_name = path.join(file_path, "dqn_best.dat")
-    if not os.path.exists(file_path):
-        os.makedirs(file_path)
-    joblib.dump(value=times, filename = time_name, compress=3)
-    joblib.dump(value=mean_ep_rewards, filename = mean_name, compress=3)
-    joblib.dump(value=best_ep_rewards, filename = best_name, compress=3)
 
     return times, mean_ep_rewards, best_ep_rewards

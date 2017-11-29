@@ -164,5 +164,4 @@ def wrap_deepmind(env, rha=False):
     env = ProcessFrame86(env)
     if rha:
         env = DecompositeRewardsWrapper(env)
-
     return env
