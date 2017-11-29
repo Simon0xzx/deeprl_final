@@ -13,6 +13,11 @@ from dqn_utils import *
 
 OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs", "lr_schedule"])
 
+def aggregator(q_values, num_actions, scope, reuse=False):
+    with tf.variable_scope(scope, reuse=reuse):
+        out = layers.fully_connected(q_values, num_outputs=num_actions, activation_fn=None)
+        return out
+
 def learn(env,
           q_func,
           optimizer_spec,
@@ -35,10 +40,8 @@ def learn(env,
     start = time.time()
     logdir = 'pacman_hra_' + time.strftime("%d-%m-%Y_%H-%M-%S")
     logdir = os.path.join('hra_result', logdir)
-    if not(os.path.exists(logdir)):
-        os.makedirs(logdir)
     logz.configure_output_dir(logdir)
-    args = inspect.getargspec(train_PG)[0]
+    args = inspect.getargspec(q_func)[0]
     locals_ = locals()
     params = {k: locals_[k] if k in locals_ else None for k in args}
     logz.save_params(params)
@@ -74,7 +77,6 @@ def learn(env,
     done_mask_ph          = tf.placeholder(tf.float32, [None])
 
     # casting to float on GPU ensures lower data transfer times.
-    weights = tf.Variable(tf.random_normal([4], stddev=0.5), name="weights")
 
     obs_t_float   = tf.cast(obs_t_ph,   tf.float32) / 255.0
     obs_tp1_float = tf.cast(obs_tp1_ph, tf.float32) / 255.0
@@ -86,10 +88,10 @@ def learn(env,
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
 
-    weights = weights / tf.linalg.norm(weights)
-    q_all = weights[0] * q_food + weights[1] * q_avoid + weights[2] * q_fruit + weights[3] * q_eat
-    target_q_all = weights[0] * target_food + weights[1] * target_avoid + weights[2] * target_fruit + weights[3] * target_eat
-    action_selected = tf.argmax(q_all, 0)
+    target_q_all = tf.concat([target_food, target_avoid, target_fruit, target_eat], 0)
+    target_q_total = aggregator(target_q_all, num_actions, scope="target_q_agg", reuse=False)
+    action_selected = tf.argmax(target_q_total, 0)
+    agg_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_agg')
 
     q_act_food_t_val = tf.reduce_sum(q_food * tf.one_hot(act_t_ph, num_actions), axis=1)
     q_act_avoid_t_val = tf.reduce_sum(q_avoid * tf.one_hot(act_t_ph, num_actions), axis=1)
@@ -107,7 +109,7 @@ def learn(env,
     eat_error = tf.reduce_mean(tf.losses.huber_loss(y_eat_t_val, q_act_eat_t_val))
 
     weight_error = rew_food_t_ph + rew_avoid_t_ph + rew_fruit_t_ph + rew_eat_t_ph
-    weight_error += gamma * tf.max(target_q_all, 0) - target_q_all
+    weight_error += gamma * tf.maximum(target_q_total, 0) - target_q_total
 
     # construct optimization op (with gradient clipping)
     learning_rate = tf.placeholder(tf.float32, (), name="learning_rate")
@@ -122,7 +124,7 @@ def learn(env,
                  var_list=q_func_vars, clip_val=grad_norm_clipping)
 
     train_weight = minimize_and_clip(optimizer, weight_error,
-                 var_list=weights, clip_val=grad_norm_clipping)
+                 var_list=agg_vars, clip_val=grad_norm_clipping)
 
     # update_target_fn will be called periodically to copy Q network to target Q network
     update_target_fn = []
@@ -284,7 +286,7 @@ def learn(env,
             logz.log_tabular("Exploration", exploration.value(t))
             logz.log_tabular("Learning Rate", optimizer_spec.lr_schedule.value(t))
             logz.dump_tabular()
-            logz.pickle_tf_vars()
+            # logz.pickle_tf_vars()
 
             sys.stdout.flush()
 
