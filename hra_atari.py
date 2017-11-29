@@ -23,16 +23,16 @@ def hra_model(img_in, num_actions, scope, reuse=False):
         out = layers.flatten(out)
         with tf.variable_scope("seek_food"):
             food = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            food = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
+            food = layers.fully_connected(food, num_outputs=num_actions, activation_fn=None)
         with tf.variable_scope("avoid_ghost"):
             avoid = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            avoid = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
+            avoid = layers.fully_connected(avoid, num_outputs=num_actions, activation_fn=None)
         with tf.variable_scope("seek_fruit"):
             fruit = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            fruit = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
+            fruit = layers.fully_connected(fruit, num_outputs=num_actions, activation_fn=None)
         with tf.variable_scope("eat_ghost"):
             eat = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            eat = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
+            eat = layers.fully_connected(eat, num_outputs=num_actions, activation_fn=None)
         return (food, avoid, fruit, eat)
 
 
