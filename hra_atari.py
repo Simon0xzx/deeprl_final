@@ -8,6 +8,7 @@ import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import matplotlib.pyplot as plt
 import hra
+import hra_agg
 from dqn_utils import *
 from atari_wrappers import *
 
@@ -72,7 +73,7 @@ def atari_learn(env,
         ], outside_value=0.01
     )
 
-    time, mean_ep_reward, best_ep_reward = hra.learn(
+    time, mean_ep_reward, best_ep_reward = hra_agg.learn(
         env,
         q_func=hra_model,
         optimizer_spec=optimizer,
