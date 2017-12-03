@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import matplotlib.pyplot as plt
-import dqn_hra
+import hra
 from dqn_utils import *
 from atari_wrappers import *
 
@@ -22,16 +22,20 @@ def hra_model(img_in, num_actions, scope, reuse=False):
             out = layers.convolution2d(out, num_outputs=64, kernel_size=3, stride=1, activation_fn=tf.nn.relu)
         out = layers.flatten(out)
         with tf.variable_scope("seek_food"):
-            food = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            food = layers.fully_connected(food, num_outputs=num_actions, activation_fn=None)
+            food = layers.fully_connected(out, num_outputs=128,             activation_fn=tf.nn.relu)
+            food = layers.fully_connected(food, num_outputs=64,             activation_fn=tf.nn.relu)
+            food = layers.fully_connected(food, num_outputs=num_actions,    activation_fn=None)
         with tf.variable_scope("avoid_ghost"):
-            avoid = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            avoid = layers.fully_connected(avoid, num_outputs=num_actions, activation_fn=None)
+            avoid = layers.fully_connected(out, num_outputs=128,            activation_fn=tf.nn.relu)
+            avoid = layers.fully_connected(avoid, num_outputs=64,           activation_fn=tf.nn.relu)
+            avoid = layers.fully_connected(avoid, num_outputs=num_actions,  activation_fn=None)
         with tf.variable_scope("seek_fruit"):
-            fruit = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
-            fruit = layers.fully_connected(fruit, num_outputs=num_actions, activation_fn=None)
+            fruit = layers.fully_connected(out, num_outputs=128,            activation_fn=tf.nn.relu)
+            fruit = layers.fully_connected(fruit, num_outputs=64,           activation_fn=tf.nn.relu)
+            fruit = layers.fully_connected(fruit, num_outputs=num_actions,  activation_fn=None)
         with tf.variable_scope("eat_ghost"):
-            eat = layers.fully_connected(out, num_outputs=64,         activation_fn=tf.nn.relu)
+            eat = layers.fully_connected(out, num_outputs=128,         activation_fn=tf.nn.relu)
+            eat = layers.fully_connected(eat, num_outputs=64,          activation_fn=tf.nn.relu)
             eat = layers.fully_connected(eat, num_outputs=num_actions, activation_fn=None)
         return (food, avoid, fruit, eat)
 
@@ -49,7 +53,7 @@ def atari_learn(env,
                                          (num_iterations / 2,  5e-5 * lr_multiplier),
                                     ],
                                     outside_value=5e-5 * lr_multiplier)
-    optimizer = dqn_hra.OptimizerSpec(
+    optimizer = hra.OptimizerSpec(
         constructor=tf.train.AdamOptimizer,
         kwargs=dict(epsilon=1e-4),
         lr_schedule=lr_schedule
@@ -68,7 +72,7 @@ def atari_learn(env,
         ], outside_value=0.01
     )
 
-    time, mean_ep_reward, best_ep_reward = dqn_hra.learn(
+    time, mean_ep_reward, best_ep_reward = hra.learn(
         env,
         q_func=hra_model,
         optimizer_spec=optimizer,
@@ -76,7 +80,7 @@ def atari_learn(env,
         exploration=exploration_schedule,
         stopping_criterion=stopping_criterion,
         replay_buffer_size=1000000,
-        batch_size=64,
+        batch_size=128,
         gamma=0.99,
         learning_starts=50000,
         learning_freq=learning_freq,
@@ -127,8 +131,8 @@ def main():
     session = get_session()
     time, mean_ep_reward, best_ep_reward = atari_learn(env, session,
                                     num_timesteps=20000000)
-    plt.plot(times, mean_rewards)
-    plt.plot(times, best_rewards)
+    plt.plot(time, mean_ep_reward)
+    plt.plot(time, best_ep_reward)
     plt.legend(["mean_rewards", "best_rewards"], loc='best')
     plt.show()
 

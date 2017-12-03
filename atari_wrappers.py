@@ -155,7 +155,7 @@ class DecompositeRewardsWrapper(gym.Wrapper):
                                    avoid_reward,
                                    fruit_reward,
                                    eat_reward])
-        return obs, compound_reward, done
+        return obs, compound_reward, done, info
 
 def wrap_deepmind(env, rha=False):
     env = EpisodicLifeEnv(env)
